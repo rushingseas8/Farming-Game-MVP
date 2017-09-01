@@ -10,12 +10,15 @@ public class Controller : MonoBehaviour {
 	public KeyCode[] right { get; set; }
 	public KeyCode[] up { get; set; }
 	public KeyCode[] down { get; set; }
+    public KeyCode slow;
+    public KeyCode cameraLock;
 
 	public Camera mainCamera;
 
 	public static float thirdPersonDistance = 0;
 
 	public static bool flyingMode = true;
+    public static bool cameraKeyLock = true;
 
 	private static float movementScale = 0.3f;
 	private static float rotationScale = 5f;
@@ -29,12 +32,15 @@ public class Controller : MonoBehaviour {
 		backward = new KeyCode[]{ KeyCode.S, KeyCode.DownArrow };
 		left = new KeyCode[]{ KeyCode.A, KeyCode.LeftArrow };
 		right = new KeyCode[]{ KeyCode.D, KeyCode.RightArrow };
-		up = new KeyCode[]{ KeyCode.LeftShift, KeyCode.Space };
-		down = new KeyCode[]{ KeyCode.LeftControl, KeyCode.LeftAlt };
+		up = new KeyCode[]{ KeyCode.Q, /*KeyCode.LeftShift,*/ KeyCode.Space };
+		down = new KeyCode[]{ KeyCode.E, KeyCode.LeftControl, KeyCode.LeftAlt };
+
+		slow = KeyCode.LeftShift;
+		cameraLock = KeyCode.Escape;
 
 		mainCamera = Camera.main;
 
-		//Cursor.lockState = CursorLockMode.Locked;
+        Cursor.lockState = CursorLockMode.Locked;
 
 		/*
 		if (flyingMode)
@@ -80,37 +86,39 @@ public class Controller : MonoBehaviour {
 
 		bool onGround = false;
 
-		/*
-		 * Raycast down and if we hit terrain, ensure movement is constrained to be normal to
-		 * the terrain. This ensures we only move on the ground, instead of clipping in/floating.
-		 */
-		RaycastHit hit;
-		if (Physics.Raycast (this.gameObject.transform.position, Vector3.down, out hit)) {
-			if (hit.distance <= 1.5f) {
-				onGround = true;
+        float newMovementScale = movementScale;
 
-				Vector3 fbn = new Vector3 (0, hit.normal.y, hit.normal.z);
-				float xAngle = 90 - Vector3.Angle (fbn, Vector3.forward);
-
-				Vector3 lrn = new Vector3 (hit.normal.x, hit.normal.y, 0);
-				float zAngle = 90 - Vector3.Angle (lrn, Vector3.left);
-
-				ang = Quaternion.Euler (xAngle, 0, zAngle);
-			}
-		}
-
+        if (Input.GetKeyUp(cameraLock))
+        {
+            cameraKeyLock = !cameraKeyLock;
+            Debug.Log("Smashed that mfing escape key dawg.");
+        }
+        if (Input.GetKey(slow))
+        {
+            newMovementScale *= 0.5f;
+        }
 		if (keycodePressed (forward)) {
-			newPosition += (ang * quat * Vector3.forward * movementScale);
+			newPosition += (ang * quat * Vector3.forward * newMovementScale);
 		}
 		if (keycodePressed (backward)) {
-			newPosition += (ang * quat * Vector3.back * movementScale);
+			newPosition += (ang * quat * Vector3.back * newMovementScale);
 		}
 		if (keycodePressed (left)) {
-			newPosition += (ang * quat * Vector3.left * movementScale);
+			newPosition += (ang * quat * Vector3.left * newMovementScale);
 		}
 		if (keycodePressed (right)) {
-			newPosition += (ang * quat * Vector3.right * movementScale);
+			newPosition += (ang * quat * Vector3.right * newMovementScale);
 		}
+
+        if (cameraKeyLock)
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        } else
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
 
 		if (flyingMode) {
 			if (keycodePressed (up)) {
@@ -141,17 +149,20 @@ public class Controller : MonoBehaviour {
 			float tent = rot.x + (rotationScale * mouseY);
 
 			if (xRot > 270 && tent < 270) {
-				xRot = 270;
+				xRot = -89;
 			} else if (xRot < 90 && tent > 90) {
-				xRot = 90;
+				xRot = 89;
 			} else {
 				xRot += rotationScale * mouseY;
 			}
+            
 
-			newRotation = Quaternion.Euler (
+            float newYRot = rot.y + (rotationScale * mouseX);
+
+            newRotation = Quaternion.Euler (
 				new Vector3 (
 					xRot,
-					rot.y + (rotationScale * mouseX),
+					newYRot,
 					0));
 		}
 
@@ -165,78 +176,21 @@ public class Controller : MonoBehaviour {
 		mainCamera.transform.position = newPosition + (newRotation * new Vector3 (0, 0, -thirdPersonDistance));
 		mainCamera.transform.rotation = newRotation;
 
-		/*
-		if ((int)newPosition.x / Generator.meshDimension > xChunk) {
-			xChunk = (int)(newPosition.x / Generator.meshDimension);
-			for (int i = 0; i < Generator.renderDiameter; i++) {
-				Vector3 position = new Vector3 (((Generator.renderRadius + xChunk - 0.5f) * Generator.meshDimension), 0, ((-Generator.renderRadius + zChunk + i - 0.5f) * Generator.meshDimension));
-				GameObject newObj = Generator.createTerrainObject (new Mesh(), position);
-				StartCoroutine(Generator.generateTerrainBackground (Main.xStart + Generator.renderRadius + xChunk, Main.yStart + zChunk - Generator.renderRadius + i, newObj));
-			}
-		}
-		if ((int)newPosition.x / Generator.meshDimension < xChunk) {			
-			xChunk = (int)(newPosition.x / Generator.meshDimension);
-			for (int i = 0; i < Generator.renderDiameter; i++) {	
-				Vector3 position = new Vector3 (((-Generator.renderRadius + xChunk - 0.5f) * Generator.meshDimension), 0, ((-Generator.renderRadius + zChunk + i - 0.5f) * Generator.meshDimension));
-				GameObject newObj = Generator.createTerrainObject (new Mesh(), position);
-				StartCoroutine(Generator.generateTerrainBackground (Main.xStart - Generator.renderRadius + xChunk, Main.yStart + zChunk - Generator.renderRadius + i, newObj));
-			}
-		}
-		if ((int)newPosition.z / Generator.meshDimension > zChunk) {
-			zChunk = (int)(newPosition.z / Generator.meshDimension);
-			for (int i = 0; i < Generator.renderDiameter; i++) {	
-				Vector3 position = new Vector3 (((-Generator.renderRadius + xChunk + i - 0.5f) * Generator.meshDimension), 0, ((Generator.renderRadius + zChunk - 0.5f) * Generator.meshDimension));
-				GameObject newObj = Generator.createTerrainObject (new Mesh(), position);
-				StartCoroutine(Generator.generateTerrainBackground (Main.xStart + xChunk - Generator.renderRadius + i, Main.yStart + zChunk + Generator.renderRadius, newObj));
-			}
-		}
-		if ((int)newPosition.z / Generator.meshDimension < zChunk) {
-			zChunk = (int)(newPosition.z / Generator.meshDimension);
-			for (int i = 0; i < Generator.renderDiameter; i++) {		
-				Vector3 position = new Vector3 (((-Generator.renderRadius + xChunk + i - 0.5f) * Generator.meshDimension), 0, ((-Generator.renderRadius + zChunk - 0.5f) * Generator.meshDimension));
-				GameObject newObj = Generator.createTerrainObject (new Mesh(), position);
-				StartCoroutine(Generator.generateTerrainBackground (Main.xStart + xChunk - Generator.renderRadius + i, Main.yStart + zChunk - Generator.renderRadius, newObj));
-			}
-		}*/
-	}
+        RaycastHit hit;
 
-	public static void DrawMeshOutline() {
-		Ray ray = Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2, Screen.height / 2));
-		RaycastHit hit = new RaycastHit();
+        if (Input.GetMouseButtonDown(0))
+        {
+            Ray ray = Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2, Screen.height / 2));
 
-		if (Physics.Raycast (ray.origin, ray.direction, out hit, Mathf.Infinity)) {
-			int index = hit.triangleIndex;
-			if (index == -1) {
-				//
-			} else {
-				MeshCollider mc = hit.collider as MeshCollider;
-				Mesh mesh = mc.sharedMesh;
+            if (Physics.Raycast(ray.origin, ray.direction, out hit, Mathf.Infinity))
+            {
+                GameObject plant = hit.collider.gameObject;
 
-				Vector3[] vertices = mesh.vertices;
-				int[] triangles = mesh.triangles;
-
-
-				Transform hitTransform = hit.collider.transform;
-
-				Vector3[] points = new Vector3[6];
-				int offset = index % 2 == 0 ? 0 : -3;
-				for (int i = 0; i < 6; i++) {
-					points [i] = vertices [triangles [index * 3 + i + offset]];
-					points [i] = hitTransform.TransformPoint (points [i]);
-				}
-
-				GL.Begin(GL.LINES);
-				GL.Color(new Color(1f, 1f, 1f, 1f));
-				GL.Vertex (points [1]);
-				GL.Vertex (points [2]);
-				GL.Vertex (points [2]);
-				GL.Vertex (points [3]);
-				GL.Vertex (points [3]);
-				GL.Vertex (points [4]);
-				GL.Vertex (points [4]);
-				GL.Vertex (points [5]);
-				GL.End();
-			}
-		}
-	}
+                if (plant != null && plant.GetComponent<PlantBehavior>() != null)
+                {
+                    Debug.Log("Growth Rate: " + plant.GetComponent<PlantBehavior>().growthRate + " Growth Limit: " + plant.GetComponent<PlantBehavior>().growthLimit);
+                }
+            }
+        }
+    }
 }

@@ -16,7 +16,23 @@ public class Block {
 		this.nutrition = nutrition;
 	}
 
-	public Block lookup(int x, int z) {
-		
+	public static Block lookup(int x, int z) {
+		return blocks.Find (elem => elem.x == x && elem.z == z);
+	}
+
+	public static float heightLookup(int x, int z) {
+		Block block = lookup (x, z);
+		if (block == null) {
+			return -1.0f;
+		}
+		return block.height;
+	}
+
+	public static float nutritionLookup(int x, int z) {
+		Block block = lookup (x, z);
+		if (block == null) {
+			return -1.0f;
+		}
+		return block.nutrition;
 	}
 }
