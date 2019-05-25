@@ -61,7 +61,8 @@ public class PlantBehavior : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-        growthRate = getGrowthRate(0.0f);
+		//growthRate = getGrowthRate(0.0f);
+		growthRate = getGrowthRate(Block.nutritionLookup((int)(startingX - 0.5f), (int)(startingZ - 0.5f)));
 
         transform.localScale = new Vector3(0.3f, maxHeight * growth, 0.3f) ;
         transform.localPosition = new Vector3(startingX, startingY + growth, startingZ);

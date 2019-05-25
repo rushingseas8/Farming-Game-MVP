@@ -32,10 +32,10 @@ public class Controller : MonoBehaviour {
 		backward = new KeyCode[]{ KeyCode.S, KeyCode.DownArrow };
 		left = new KeyCode[]{ KeyCode.A, KeyCode.LeftArrow };
 		right = new KeyCode[]{ KeyCode.D, KeyCode.RightArrow };
-		up = new KeyCode[]{ KeyCode.Q, /*KeyCode.LeftShift,*/ KeyCode.Space };
+		up = new KeyCode[]{ KeyCode.Q, KeyCode.LeftShift, KeyCode.Space };
 		down = new KeyCode[]{ KeyCode.E, KeyCode.LeftControl, KeyCode.LeftAlt };
 
-		slow = KeyCode.LeftShift;
+		slow = KeyCode.Z;
 		cameraLock = KeyCode.Escape;
 
 		mainCamera = Camera.main;
